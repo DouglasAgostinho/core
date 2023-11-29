@@ -43,3 +43,59 @@ class Network():
         self.PARTICIPANTS = 100 #Be aware with system max of file descriptors
         self.MSG_CONFIRMED = b"![MESSAGE CONFIRMED]!"
         self.MSG_CORRUPTED = b"![MESSAGE CORRUPTED]!"
+
+
+    def network_initialization(self):
+        pass
+        # issue - (create auto message to inform network ingress and request peers info feedback)
+
+    def message_proccessing(self, msg_type, message, rcv_hash=None):
+        #If rcv_hash is available then message received, if is None then send message
+
+        msg_hash = SHA512.new(message).digest()
+        msg_header = str(len(message))
+        msg_header = msg_header.rjust(self.HEADER - 2, "0")                
+        msg_header = msg_type + msg_header.encode(self.FORMAT) + msg_hash                
+        send_msg = msg_header + message
+        
+        #If text
+        if msg_type == b"01":            
+
+            print(f"\n{message=}")
+
+            #Check hash and confirm message integrity
+            
+            if rcv_hash:
+                if msg_hash == rcv_hash:
+                    print(self.MSG_CONFIRMED) 
+                    return(self.MSG_CONFIRMED)
+                else:
+                    print(self.MSG_CORRUPTED) 
+                    return(self.MSG_CORRUPTED)
+            else:                
+                return (send_msg)
+
+        #If file
+        elif msg_type == b"02":
+
+            salt = str(random.randint(1, 9999))
+            #salt = salt.decode(self.FORMAT)
+
+            salt = salt + "_Linux_rcv.pdf" 
+
+            #Check hash and confirm message integrity
+            msg_hash = SHA512.new(message).digest()
+            if rcv_hash:
+                if msg_hash == rcv_hash:
+                    print(self.MSG_CONFIRMED)                 
+                    with open(salt, "wb") as f: #issue - (verify if file already exists and change name if necessary)
+                        f.write(message)
+
+                    return(self.MSG_CONFIRMED)
+                else:
+                    print(self.MSG_CORRUPTED) 
+                    return(self.MSG_CORRUPTED)
+            else:
+                return (send_msg)                
+
+        
