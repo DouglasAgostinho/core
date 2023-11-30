@@ -23,6 +23,7 @@ import select
 from Crypto.Hash import SHA512
 from Crypto.Random import random
 import sys
+import time
 
 log = Logger()
 
@@ -55,12 +56,26 @@ class Network():
 
 
     def network_initialization(self):
+        net_discover = Client()
 
         message = f"{self.PORT}"
 
-        self.message_proccessing(msg_type=b"00", message=message)
-        pass
-        # issue - (create auto message to inform network ingress and request peers info feedback)
+        message = self.message_proccessing(msg_type=b"00", message=message)
+
+        host = "192.168.161."
+        port = 65400
+
+        for host_id in range(2, 253, 1):
+
+            for port_id in range(110, 100, 10):
+
+                host.join(str(host_id))
+                port += port_id
+
+                net_discover.client_send_message(msg=message, host=host, port=port)
+                time.sleep(0.5)
+              
+        
 
     def message_proccessing(self, msg_type, message, rcv_hash=None):
         #If rcv_hash is available then message received, if is None then send message
@@ -123,11 +138,20 @@ class Client(Network):
     def __init__(self, host=None, port=None):
         super().__init__(host, port)
     
-    def client_send_message(self):
+    def client_send_message(self, msg=None, host=None, port=None):
+        
+        if msg is None:
+            msg = input("Digite sua mensagem").encode(self.FORMAT)
+
+        if host is None:
+            host = self.HOST
+
+        if port is None:
+            port = self.PORT            
+        
         client = socket.socket()
-        #self.conn.connect(("localhost", 65434))
-        client.connect((self.HOST, self.PORT))
-        msg = input("Digite sua mensagem").encode(self.FORMAT)
+        client.connect((host, port))
+        
         client.send(msg)
         client.close()
         
@@ -174,6 +198,8 @@ class Server(Network):
 
             #Lists of monitored system IO
             readable, writable, exceptional = select.select(inputs, outputs, inputs, 3)
+
+            self.network_initialization()
 
             for s in readable:
                 #Iterate through inputs and verify if is server or connection
