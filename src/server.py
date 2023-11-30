@@ -16,6 +16,7 @@
 #------------------------------------------------------
 
 #Import section
+from tools import Logger
 import queue
 import socket
 import select
@@ -23,6 +24,7 @@ from Crypto.Hash import SHA512
 from Crypto.Random import random
 import sys
 
+log = Logger()
 
 class Network():
     def __init__(self, host=None, port=None):
@@ -33,7 +35,14 @@ class Network():
             self.HOST = host
 
         if port is None:
-            self.PORT = 65440
+            net_init = True
+            while net_init:
+                for port in range(10, 100, 10):
+                    try:
+                        self.PORT = 65400 + port
+                        net_init = False
+                    except Exception as e:
+                        log.to_file("error", str(e))
         else:
             self.PORT = port
 
@@ -46,6 +55,10 @@ class Network():
 
 
     def network_initialization(self):
+
+        message = f"{self.PORT}"
+
+        self.message_proccessing(msg_type=b"00", message=message)
         pass
         # issue - (create auto message to inform network ingress and request peers info feedback)
 
@@ -57,9 +70,16 @@ class Network():
         msg_header = msg_header.rjust(self.HEADER - 2, "0")                
         msg_header = msg_type + msg_header.encode(self.FORMAT) + msg_hash                
         send_msg = msg_header + message
+
+        #If initialization message
+        if msg_type == b"00":
+            if rcv_hash:    # issue - Create initialization message receive method
+                pass
+            else:
+                return (send_msg)
         
         #If text
-        if msg_type == b"01":            
+        elif msg_type == b"01":            
 
             print(f"\n{message=}")
 
@@ -255,7 +275,7 @@ class Server(Network):
                         s.close()
                         print(f"Connection closed")
 
-            for s in writable:
+            for s in writable: # issue -- define correct writable method
                 #outputs
                 try:
                     next_msg = message_queues[s].get_nowait()
